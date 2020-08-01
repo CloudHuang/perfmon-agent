@@ -1,17 +1,14 @@
 package kg.apc.perfmon;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ListIterator;
 import kg.apc.cmdtools.AbstractCMDTool;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
 import org.apache.log.Priority;
 
-/**
- *
- * @author undera
- */
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ListIterator;
+
 public class AgentTool extends AbstractCMDTool {
 
     private static final Logger log = LoggingManager.getLoggerForClass();
@@ -60,6 +57,9 @@ public class AgentTool extends AbstractCMDTool {
             } else if (nextArg.equals("--agent-version")) {
                 args.remove();
                 worker.logVersion();
+            } else if (nextArg.equalsIgnoreCase("--no-exec")) {
+                args.remove();
+                worker.setNoExec(true);
             } else {
                 throw new UnsupportedOperationException("Unrecognized option: " + nextArg);
             }
@@ -83,7 +83,7 @@ public class AgentTool extends AbstractCMDTool {
         os.println("Options for tool 'PerfMon': "
                 + "[ --tcp-port <port no> --udp-port <port no> "
                 + "--interval <seconds> --loglevel <debug|info|warn|error>"
-                + "--sysinfo --auto-shutdown]");
+                + "--sysinfo --auto-shutdown --no-exec]");
     }
 
     protected PerfMonWorker getWorker() throws IOException {

@@ -1,15 +1,15 @@
 package kg.apc.perfmon.metrics.jmx;
 
-import javax.management.MBeanServerConnection;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import javax.management.MBeanServerConnection;
+
 /**
- *
  * @author undera
  */
-public class JMXConnectorHelperTest extends TestCase {
+public class JMXConnectorHelperTest  extends TestCase {
 
     public JMXConnectorHelperTest(String testName) {
         super(testName);

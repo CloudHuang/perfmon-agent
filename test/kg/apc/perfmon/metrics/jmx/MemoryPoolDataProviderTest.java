@@ -1,15 +1,16 @@
 package kg.apc.perfmon.metrics.jmx;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryPoolMXBean;
-import java.lang.management.MemoryType;
-import java.lang.management.MemoryUsage;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
+import java.lang.management.MemoryUsage;
+
 /**
- *
  * @author undera
  */
 public class MemoryPoolDataProviderTest extends TestCase {
@@ -138,6 +139,10 @@ public class MemoryPoolDataProviderTest extends TestCase {
 
         public boolean isCollectionUsageThresholdSupported() {
             throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        public ObjectName getObjectName() {
+            return null;
         }
     }
 }

@@ -1,22 +1,6 @@
 // FIXME: both this class and getter is ugly because of poor TCP/udp abstraction. Refactor it!
 package kg.apc.perfmon;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Properties;
 import kg.apc.perfmon.metrics.SysInfoLogger;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
@@ -24,28 +8,34 @@ import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarProxy;
 import org.hyperic.sigar.SigarProxyCache;
 
-/**
- *
- * @author undera
- */
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Properties;
+
 public class PerfMonWorker implements Runnable {
 
     private static final Logger log = LoggingManager.getLoggerForClass();
     private int tcpPort = 4444;
     private int udpPort = 4444;
-    private int exitCode = -1;
     private boolean isFinished = true;
     private final Selector acceptSelector;
     private ServerSocketChannel tcpServer;
     private final Thread writerThread;
     private final Selector sendSelector;
     private DatagramChannel udpServer;
-    private final LinkedList tcpConnections = new LinkedList();
+    private final LinkedList<SelectableChannel> tcpConnections = new LinkedList<SelectableChannel>();
     private final Hashtable udpConnections = new Hashtable();
     private long interval = 1000;
     private final SigarProxy sigar;
     private long numConnections = 0;
     private boolean autoShutdown = false;
+    private boolean isNoExec = false;
 
     public PerfMonWorker() throws IOException {
         acceptSelector = Selector.open();
@@ -105,7 +95,7 @@ public class PerfMonWorker implements Runnable {
     }
 
     public int getExitCode() {
-        return exitCode;
+        return -1;
     }
 
     public void startAcceptingCommands() {
@@ -299,9 +289,8 @@ public class PerfMonWorker implements Runnable {
 
     private void sendToUDP(SelectionKey key) throws IOException {
         synchronized (udpConnections) {
-            Iterator it = udpConnections.keySet().iterator();
-            while (it.hasNext()) {
-                SocketAddress addr = (SocketAddress) it.next();
+            for (Object o : udpConnections.keySet()) {
+                SocketAddress addr = (SocketAddress) o;
                 PerfMonMetricGetter getter = (PerfMonMetricGetter) udpConnections.get(addr);
                 if (getter.isStarted()) {
                     ByteBuffer metrics = getter.getMetricsLine();
@@ -351,9 +340,8 @@ public class PerfMonWorker implements Runnable {
         if (channel instanceof DatagramChannel) {
             synchronized (udpConnections) {
                 DatagramChannel udpChannel = (DatagramChannel) channel;
-                Iterator it = udpConnections.keySet().iterator();
-                while (it.hasNext()) {
-                    SocketAddress addr = (SocketAddress) it.next();
+                for (Object o : udpConnections.keySet()) {
+                    SocketAddress addr = (SocketAddress) o;
                     if (udpConnections.get(addr) == udpChannel) {
                         udpChannel.send(buf, addr);
                     }
@@ -381,5 +369,13 @@ public class PerfMonWorker implements Runnable {
             numConnections++;
             udpConnections.put(remoteAddr, getter);
         }
+    }
+
+    public boolean isNoExec() {
+        return isNoExec;
+    }
+
+    public void setNoExec(boolean noExec) {
+        isNoExec = noExec;
     }
 }

@@ -1,12 +1,13 @@
 package kg.apc.perfmon.metrics.jmx;
 
-import java.lang.management.ClassLoadingMXBean;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import javax.management.ObjectName;
+import java.lang.management.ClassLoadingMXBean;
+
 /**
- *
  * @author undera
  */
 public class ClassesDataProviderTest extends TestCase {
@@ -80,6 +81,10 @@ public class ClassesDataProviderTest extends TestCase {
 
         public void setVerbose(boolean bln) {
             throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        public ObjectName getObjectName() {
+            return null;
         }
     }
 }

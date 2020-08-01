@@ -1,18 +1,20 @@
 package kg.apc.perfmon.metrics;
 
+import kg.apc.perfmon.metrics.jmx.JMXConnectorHelper;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
 import org.hyperic.sigar.SigarProxy;
 
-import kg.apc.perfmon.metrics.jmx.JMXConnectorHelper;
+public class PerfMonMetricsCreatorImpl implements PerfMonMetricsCreator {
 
-public class PerfMonMetricsCreatorImpl implements PerfMonMetricsCreator{
-	
-	private static final Logger log = LoggingManager.getLoggerForClass();
-	
-	public AbstractPerfMonMetric getMetricProvider(String metricType, MetricParamsSigar metricParams, SigarProxy sigarProxy) {
-		AbstractPerfMonMetric metric;
-		if (metricType.equalsIgnoreCase("exec")) {
+    private static final Logger log = LoggingManager.getLoggerForClass();
+
+    public AbstractPerfMonMetric getMetricProvider(String metricType, MetricParamsSigar metricParams, SigarProxy sigarProxy, boolean isNoExec) {
+        AbstractPerfMonMetric metric;
+        if (isNoExec && (metricType.equalsIgnoreCase("exec") || metricType.equalsIgnoreCase("tail"))) {
+            log.warn("Agent started in safe mode, 'exec' and 'tail' metrics are not available");
+            metric = new InvalidPerfMonMetric();
+        } else if (metricType.equalsIgnoreCase("exec")) {
             metric = new ExecMetric(metricParams);
         } else if (metricType.equalsIgnoreCase("tail")) {
             metric = new TailMetric(metricParams);
@@ -31,9 +33,9 @@ public class PerfMonMetricsCreatorImpl implements PerfMonMetricsCreator{
         } else if (metricType.equalsIgnoreCase("jmx")) {
             metric = new JMXMetric(metricParams, new JMXConnectorHelper());
         } else {
-        	metric = new InvalidPerfMonMetric();
+            metric = new InvalidPerfMonMetric();
             throw new RuntimeException("No collector object for metric type " + metricType);
         }
-		return metric;
-	}
+        return metric;
+    }
 }

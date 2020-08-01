@@ -1,5 +1,10 @@
 package kg.apc.perfmon;
 
+import kg.apc.perfmon.metrics.AbstractPerfMonMetric;
+import org.apache.jorphan.logging.LoggingManager;
+import org.apache.log.Logger;
+import org.hyperic.sigar.SigarProxy;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -8,15 +13,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import kg.apc.perfmon.metrics.AbstractPerfMonMetric;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
-import org.hyperic.sigar.SigarProxy;
 
-/**
- *
- * @author undera
- */
 public class PerfMonMetricGetter {
 
     public static final String TAB = "\t";
@@ -46,7 +43,7 @@ public class PerfMonMetricGetter {
 
         String cmdType = command.trim();
         String params = "";
-        if (command.indexOf(DVOETOCHIE) >= 0) {
+        if (command.contains(DVOETOCHIE)) {
             cmdType = command.substring(0, command.indexOf(DVOETOCHIE)).trim();
             params = command.substring(command.indexOf(DVOETOCHIE) + 1).trim();
         }
@@ -85,7 +82,6 @@ public class PerfMonMetricGetter {
             }
         } else if (cmdType.equals("udp-transmitter")) {
             setUpTransmitter(params);
-        } else if (cmdType.equals("")) {
         } else {
             throw new UnsupportedOperationException("Unknown command [" + cmdType.length() + "]: '" + cmdType + "'");
         }
@@ -97,7 +93,7 @@ public class PerfMonMetricGetter {
 
     public boolean processNextCommand() throws IOException {
         log.debug("Command line is: " + commandString);
-        if (commandString.indexOf(NEWLINE) >= 0) {
+        if (commandString.contains(NEWLINE)) {
             int pos = commandString.indexOf(NEWLINE);
             String cmd = commandString.substring(0, pos);
             commandString = commandString.substring(pos + 1);
@@ -112,9 +108,9 @@ public class PerfMonMetricGetter {
         log.debug("Building metrics");
         StringBuffer res = new StringBuffer();
         synchronized (channel) {
-            for (int n = 0; n < metrics.length; n++) {
+            for (AbstractPerfMonMetric metric : metrics) {
                 try {
-                    metrics[n].getValue(res);
+                    metric.getValue(res);
                 } catch (Exception ex) {
                     log.error("Error getting metric", ex);
                 }
@@ -130,15 +126,15 @@ public class PerfMonMetricGetter {
     private void setUpMetrics(String[] params) throws IOException {
         synchronized (channel) {
             metrics = new AbstractPerfMonMetric[params.length];
-            String metricParams = "";
             for (int n = 0; n < params.length; n++) {
+                String metricParams = "";
                 String metricType = params[n];
-                if (metricType.indexOf(DVOETOCHIE) >= 0) {
+                if (metricType.contains(DVOETOCHIE)) {
                     metricParams = metricType.substring(metricType.indexOf(DVOETOCHIE) + 1).trim();
                     metricType = metricType.substring(0, metricType.indexOf(DVOETOCHIE)).trim();
                 }
 
-                metrics[n] = AbstractPerfMonMetric.createMetric(metricType, metricParams, sigarProxy);
+                metrics[n] = AbstractPerfMonMetric.createMetric(metricType, metricParams, sigarProxy, controller.isNoExec());
             }
         }
     }
@@ -150,13 +146,13 @@ public class PerfMonMetricGetter {
     // FIXME: some kind of tokenizer would go better
     private void setUpTransmitter(String params) throws IOException {
         log.info("Starting UDP transmitter for: " + params);
-        if (params.indexOf(DVOETOCHIE) < 0) {
+        if (!params.contains(DVOETOCHIE)) {
             throw new IllegalArgumentException("Wrong syntax for udp-transmitter command: " + params);
         }
         String transmitToAddr = params.substring(0, params.indexOf(DVOETOCHIE)).trim();
         params = params.substring(params.indexOf(DVOETOCHIE) + 1).trim();
 
-        if (params.indexOf(DVOETOCHIE) < 0) {
+        if (!params.contains(DVOETOCHIE)) {
             throw new IllegalArgumentException("Wrong syntax for udp-transmitter command: " + params);
         }
         int transmitToPort = Integer.parseInt(params.substring(0, params.indexOf(DVOETOCHIE)).trim());
